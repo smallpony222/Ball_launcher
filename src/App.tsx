@@ -2,17 +2,17 @@ import React, { useEffect, useRef, useState } from "react";
 import { Canvas, useFrame } from "@react-three/fiber";
 import { Mesh } from "three";
 import { v4 as uuidv4 } from "uuid"; // Import uuid4 (v4)
-import { OrbitControls } from "@react-three/drei"; // Import OrbitControls
+import { OrbitControls, Text } from "@react-three/drei"; // Import OrbitControls
 import * as THREE from "three"; // For using Shape and ExtrudeGeometry
 
 const ARM_RADIUS = 2.7; // Approximate radius for horizontal calculation (fog water line)
-const ROTATION_SPEED = 0.10;
 const INIT_BALL_POSITION = new THREE.Vector3(2.7, 10.1, 2.4);
 
 const BallLauncherFixture: React.FC = () => {
   // State to track whether the arm should rotate
   const [isRotating, setIsRotating] = useState(false);
   const [ballThrown, setBallThrown] = useState(false); // Track if the ball was thrown
+  const [ballSpeed, setBallSpeed] = useState(0.1);
 
   // Function to toggle the rotation
   const toggleRotation = () => {
@@ -35,6 +35,7 @@ const BallLauncherFixture: React.FC = () => {
         <BallLauncherScene
           isRotating={isRotating}
           ballThrown={ballThrown}
+          ballSpeed={ballSpeed}
           setBallThrown={setBallThrown}
         />
       </Canvas>
@@ -91,7 +92,7 @@ const BallLauncherFixture: React.FC = () => {
         </button>
 
         <button
-          onClick={() => setBallThrown(true)}
+          onClick={() => setBallSpeed(ballSpeed + 0.05)}
           style={{
             padding: "10px",
             backgroundColor: "darkred",
@@ -106,7 +107,7 @@ const BallLauncherFixture: React.FC = () => {
         </button>
 
         <button
-          onClick={() => setBallThrown(true)}
+          onClick={() => setBallSpeed(ballSpeed - 0.05)}
           style={{
             padding: "10px",
             backgroundColor: "darkgreen",
@@ -119,6 +120,15 @@ const BallLauncherFixture: React.FC = () => {
         >
           Speed down
         </button>
+        <input style={{
+            padding: "10px",
+            marginLeft: "12px",
+            borderRadius: "5px",
+            cursor: "pointer",
+          }} 
+          type = "text" 
+          value={ballSpeed}>
+        </input>
       </div>
     </>
   );
@@ -128,8 +138,9 @@ const BallLauncherFixture: React.FC = () => {
 const BallLauncherScene: React.FC<{
   isRotating: boolean;
   ballThrown: boolean;
+  ballSpeed: number;
   setBallThrown: (thrown: boolean) => void;
-}> = ({ isRotating, ballThrown, setBallThrown }) => {
+}> = ({ isRotating, ballThrown, ballSpeed, setBallThrown }) => {
   const part1Ref = useRef<Mesh>(null);
   const part2Ref = useRef<Mesh>(null);
   const axisRef = useRef<Mesh>(null); // Reference for the axis
@@ -144,6 +155,7 @@ const BallLauncherScene: React.FC<{
   const [gravity, setGravity] = useState<THREE.Vector3>(
     new THREE.Vector3(0, -9.8, 0)
   );
+  const [distance, setDistance] = useState<number>(0.00);
   const [position, setPosition] = useState<THREE.Vector3>(INIT_BALL_POSITION); // Ball position
 
   // Create half circle shape (filled) for extrude geometry
@@ -162,45 +174,13 @@ const BallLauncherScene: React.FC<{
     }
   );
 
-  // Animation: Rotate the arm around the axis when isRotating is true
-  // useFrame(() => {
-  //   if (groupRef.current && isRotating) {
-  //     groupRef.current.rotation.z += 0.03; // Speed of rotation can be adjusted here
-  //   }
-
-  //   // If the ball has been thrown, update its position based on velocity and gravity
-  //   if (ballThrown && ballRef.current) {
-  //     const deltaTime = 0.016; // Simulating a frame time of 16ms (60fps)
-  //     const gravity = new THREE.Vector3(0, -9.8, 0); // Gravity vector
-  //     setVelocity((prevVelocity) => {
-  //       return prevVelocity.add(gravity.multiplyScalar(deltaTime));
-  //     });
-
-  //     setPosition((prevPosition) => {
-  //       return prevPosition.add(velocity.clone().multiplyScalar(deltaTime));
-  //     });
-
-  //     // Check if the ball has hit the ground (Y <= 0)
-  //     if (position.y <= 0) {
-  //       setBallThrown(false); // Stop the ball once it hits the ground
-  //     }
-  //   }
-  // });
   useEffect(() => {
     // let launchSpeed = ARM_RADIUS * Math.tan(ROTATION_SPEED);
     let launchSpeed = 0;
     if(isRotating && groupRef.current)
-      launchSpeed = 10;
-    let launchGravity = launchSpeed*launchSpeed/ARM_RADIUS;
+      launchSpeed = ballSpeed*50;
     if (ballThrown && groupRef.current) {
       const launchAngle = - groupRef.current.rotation.z;
-      // setGravity(
-      //   new THREE.Vector3(
-      //     launchGravity * Math.cos(launchAngle),
-      //     -9.8 + launchGravity * Math.sin(launchAngle),
-      //     0
-      //   )
-      // );
       const initialVelocity = new THREE.Vector3(
         launchSpeed * Math.cos(launchAngle + Math.PI / 2),
         // launchSpeed * Math.cos(launchAngle),
@@ -215,7 +195,7 @@ const BallLauncherScene: React.FC<{
     const deltaTime = 0.016; // Frame time (approx. 60 FPS)
 
     if (isRotating && groupRef.current) {
-      groupRef.current.rotation.z -= ROTATION_SPEED; // Adjust rotation speed as needed
+      groupRef.current.rotation.z -= ballSpeed; // Adjust rotation speed as needed
       if (!ballThrown) {
         const angleInRadians = -groupRef.current.rotation.z + 0.04;
         groupRef.current.getWorldPosition(armPositionRef.current);
@@ -237,12 +217,7 @@ const BallLauncherScene: React.FC<{
     if (ballThrown && ballRef.current) {
       // Launch the ball with an initial velocity
       if (velocity.length() === 0) {
-        const initialVelocity = new THREE.Vector3(
-          0,
-          // launchSpeed * Math.cos(launchAngle),
-          0,
-          0 // Assume no motion along Z-axis
-        );
+        const initialVelocity = new THREE.Vector3(0, 0, 0);
         setVelocity(initialVelocity); // Set initial velocity
       }
 
@@ -261,6 +236,7 @@ const BallLauncherScene: React.FC<{
 
       // Reset if the ball hits the ground
       if (position.y <= 0) {
+        setDistance(position.x);
         setBallThrown(false); // Stop updating the ball's motion
         setPosition(INIT_BALL_POSITION); // Reset to initial position
         setVelocity(new THREE.Vector3(0, 0, 0)); // Reset velocity
@@ -337,6 +313,13 @@ const BallLauncherScene: React.FC<{
         <meshStandardMaterial color="darkgray" side={2} />
         <planeGeometry args={[100, 100]} /> {/* Plane wall */}
       </mesh>
+      {/* <Text
+      position={[5, 5, 1]} // Adjust position to place in the top-right
+      fontSize={5} // Adjust size
+      color="red" // Text color
+    >
+      {distance}
+    </Text> */}
     </>
   );
 };
