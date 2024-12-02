@@ -1,0 +1,38 @@
+{
+  "name": "react-typescript",
+  "version": "1.0.0",
+  "description": "React and TypeScript example starter project",
+  "keywords": [
+    "typescript",
+    "react",
+    "starter"
+  ],
+  "main": "src/index.tsx",
+  "dependencies": {
+    "@react-three/drei": "9.117.2",
+    "@react-three/fiber": "8.17.10",
+    "jotai": "https://pkg.csb.dev/pmndrs/jotai/commit/2d0d4ad9/jotai",
+    "react": "^18.3.1",
+    "react-dom": "^18.3.1",
+    "react-scripts": "^5.0.1",
+    "three": "0.171.0",
+    "uuid": "11.0.3"
+  },
+  "devDependencies": {
+    "@types/react-dom": "^18.3.1",
+    "@types/three": "0.170.0",
+    "typescript": "^5.7.2"
+  },
+  "scripts": {
+    "start": "react-scripts start",
+    "build": "react-scripts build",
+    "test": "react-scripts test --env=jsdom",
+    "eject": "react-scripts eject"
+  },
+  "browserslist": [
+    ">0.2%",
+    "not dead",
+    "not ie <= 11",
+    "not op_mini all"
+  ]
+}
