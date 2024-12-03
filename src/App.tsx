@@ -18,6 +18,13 @@ const BallLauncherFixture: React.FC = () => {
   const toggleRotation = () => {
     setIsRotating((prev) => !prev);
   };
+  const controlSpeed = (speed: number) => {
+    setBallSpeed(parseFloat(speed.toFixed(2)));
+    if(speed == 0)
+    {
+      setIsRotating(false);
+    }
+  }
 
   return (
     <>
@@ -64,19 +71,6 @@ const BallLauncherFixture: React.FC = () => {
         </button>
         {/* Button to throw the ball */}
         <button
-          style={{
-            padding: "10px",
-            backgroundColor: "red",
-            color: "white",
-            border: "none",
-            marginLeft: "12px",
-            borderRadius: "5px",
-            cursor: "pointer",
-          }}
-        >
-          Reset
-        </button>
-        <button
           onClick={() => setBallThrown(true)}
           style={{
             padding: "10px",
@@ -92,7 +86,7 @@ const BallLauncherFixture: React.FC = () => {
         </button>
 
         <button
-          onClick={() => setBallSpeed(ballSpeed + 0.05)}
+          onClick={() => controlSpeed(ballSpeed + 0.05)}
           style={{
             padding: "10px",
             backgroundColor: "darkred",
@@ -107,7 +101,7 @@ const BallLauncherFixture: React.FC = () => {
         </button>
 
         <button
-          onClick={() => setBallSpeed(ballSpeed - 0.05)}
+          onClick={() => ballSpeed - 0.05 > 0 ? controlSpeed(ballSpeed - 0.05) : controlSpeed(0)}
           style={{
             padding: "10px",
             backgroundColor: "darkgreen",
@@ -235,11 +229,31 @@ const BallLauncherScene: React.FC<{
       ballRef.current.position.copy(position);
 
       // Reset if the ball hits the ground
-      if (position.y <= 0) {
-        setDistance(position.x);
-        setBallThrown(false); // Stop updating the ball's motion
-        setPosition(INIT_BALL_POSITION); // Reset to initial position
+      if (position.y <= 0 && groupRef.current) {
+        setDistance(position.x);// Stop updating the ball's motion
+        // setPosition(INIT_BALL_POSITION); // Reset to initial position
+        const angleInRadians = -groupRef.current.rotation.z + 0.04;
+        groupRef.current.getWorldPosition(armPositionRef.current);
+
+        const offset1 = Math.cos(angleInRadians) * ARM_RADIUS;
+        const offset2 = Math.sin(angleInRadians) * ARM_RADIUS;
+        const armBasePosition = armPositionRef.current;
+        setPosition(
+          (prev) =>
+            new THREE.Vector3(
+              armBasePosition.x + offset1,
+              armBasePosition.y + offset2,
+              prev.z
+            )
+        );
+        ballRef.current.position.copy( new THREE.Vector3(
+          armBasePosition.x + offset1,
+          armBasePosition.y + offset2,
+          position.z
+        ));
         setVelocity(new THREE.Vector3(0, 0, 0)); // Reset velocity
+
+        setBallThrown(false); 
       }
     }
   });
